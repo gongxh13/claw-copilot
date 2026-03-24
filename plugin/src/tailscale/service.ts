@@ -31,7 +31,7 @@ const INSTALL_URL = "https://tailscale.com/download";
 
 export function getTailscaleStatus(options: StatusOptions, runner: CommandRunner = runCommand): TailscaleStatus {
   const result = runner("tailscale", ["status", "--json"]);
-  if (result.errorCode === "ENOENT") {
+  if (result.errorCode === "ENOENT" || !result.ok && (result.stderr.includes("No such file or directory") || result.stderr.includes("not found"))) {
     const installPlan = getInstallPlan(process.platform, commandExists);
     return {
       status: "not-installed",
@@ -193,6 +193,13 @@ export function ensureTailscaleInstalled(
   const status = getTailscaleStatus(options, runtime.run);
 
   if (!result.ok) {
+    const errorOutput = result.stderr || result.stdout || "";
+    const isPermissionError = 
+      errorOutput.includes("password") || 
+      errorOutput.includes("Permission denied") ||
+      errorOutput.includes("admin") ||
+      result.exitCode === 1;
+
     return {
       ...status,
       status: "not-installed",
@@ -201,8 +208,12 @@ export function ensureTailscaleInstalled(
       canAutoInstall: true,
       installUrl: INSTALL_URL,
       installCommand: plan.shell,
-      message: "Automatic Tailscale installation failed.",
-      detail: result.stderr || result.stdout || plan.summary
+      message: isPermissionError
+        ? "Installation requires administrator privileges."
+        : "Automatic Tailscale installation failed.",
+      detail: isPermissionError
+        ? `Run this command in Terminal and enter your admin password when prompted:\n\n${plan.shell}`
+        : (errorOutput || plan.summary)
     };
   }
 
@@ -359,7 +370,14 @@ function commandExists(command: string): boolean {
     encoding: "utf8",
     timeout: 4_000
   });
-  return result.status === 0;
+  if (result.status !== 0) {
+    return false;
+  }
+  const verifyResult = spawnSync(command, ["--version"], {
+    encoding: "utf8",
+    timeout: 4_000
+  });
+  return verifyResult.status === 0;
 }
 
 function runInstallPlan(plan: InstallPlan, runner: CommandRunner, platform: NodeJS.Platform): CommandResult {

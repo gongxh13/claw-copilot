@@ -128,6 +128,27 @@ describe("ensureTailscaleInstalled", () => {
 
     expect(status.status).toBe("connected");
   });
+
+  it("detects permission error and provides clear install command", () => {
+    const status = ensureTailscaleInstalled(
+      { basePath: "/claw-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
+      "darwin",
+      {
+        commandExists: () => true,
+        run: (_command, args) => {
+          if (args[0] === "status") {
+            return { ok: false, stdout: "", stderr: "No such file or directory", exitCode: 1, errorCode: "ENOENT" };
+          }
+          return { ok: false, stdout: "", stderr: "Password:", exitCode: 1 };
+        }
+      }
+    );
+
+    expect(status.status).toBe("not-installed");
+    expect(status.canAutoInstall).toBe(true);
+    expect(status.message).toContain("administrator");
+    expect(status.detail).toContain("brew install --cask tailscale");
+  });
 });
 
 describe("disableRemoteAccess", () => {
