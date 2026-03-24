@@ -1,0 +1,50 @@
+{
+  "name": "crew-copilot",
+  "version": "0.1.0",
+  "description": "Run-aware observability dashboard plugin for OpenClaw",
+  "workspaces": [
+    "dashboard"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace dashboard && tsup plugin/src/index.ts --format esm --dts --out-dir dist && rm -rf dist/dashboard && mkdir -p dist/dashboard && cp -R dashboard/dist/. dist/dashboard/",
+    "dev": "tsx watch plugin/src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run check --workspace dashboard && tsc --noEmit"
+  },
+  "keywords": [
+    "openclaw",
+    "plugin",
+    "dashboard",
+    "observability"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "openclaw": ">=2026.3.12"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "openclaw": "^2026.3.13",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}
