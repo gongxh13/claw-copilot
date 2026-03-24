@@ -19,9 +19,9 @@ type MobileView = "sessions" | "runs" | "detail";
 const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
 export function App() {
-  const initialPayload = normalizeDashboardPayload(window.__CREW_COPILOT__ ?? emptyPayload);
-  const basePath = window.__CREW_COPILOT_BASE_PATH__ ?? "/crew-copilot";
-  const title = window.__CREW_COPILOT_TITLE__ ?? "ClawCopilot";
+  const initialPayload = normalizeDashboardPayload(window.__CLAW_COPILOT__ ?? emptyPayload);
+  const basePath = window.__CLAW_COPILOT_BASE_PATH__ ?? "/claw-copilot";
+  const title = window.__CLAW_COPILOT_TITLE__ ?? "Claw Copilot";
   const initialRoute = parseDashboardRoute(window.location.pathname, basePath);
   const [dashboardState, setDashboardState] = useState({
     sessions: initialPayload.sessions,
@@ -41,6 +41,7 @@ export function App() {
   const [sessionPopover, setSessionPopover] = useState<{ session: SessionListItem; top: number } | null>(null);
   const [selectedRunId, setSelectedRunId] = useState(initialRoute.runId ?? "");
   const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const sessionPopoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { sessions, sessionPagination, selectedId, detail } = dashboardState;
 
@@ -304,10 +305,40 @@ export function App() {
   }
 
   function showSessionPopover(session: SessionListItem, target: HTMLElement) {
+    if (sessionPopoverTimerRef.current) {
+      clearTimeout(sessionPopoverTimerRef.current);
+      sessionPopoverTimerRef.current = null;
+    }
     const sidebarBox = sidebarRef.current?.getBoundingClientRect();
     const targetBox = target.getBoundingClientRect();
     const top = sidebarBox ? Math.max(10, targetBox.top - sidebarBox.top) : 10;
     setSessionPopover({ session, top });
+  }
+
+  function scheduleSessionPopover(session: SessionListItem, target: HTMLElement) {
+    if (sessionPopoverTimerRef.current) {
+      clearTimeout(sessionPopoverTimerRef.current);
+    }
+    sessionPopoverTimerRef.current = setTimeout(() => {
+      showSessionPopover(session, target);
+      sessionPopoverTimerRef.current = null;
+    }, 350);
+  }
+
+  function hideSessionPopover(sessionId?: string) {
+    if (sessionPopoverTimerRef.current) {
+      clearTimeout(sessionPopoverTimerRef.current);
+      sessionPopoverTimerRef.current = null;
+    }
+    setSessionPopover((current) => {
+      if (!current) {
+        return current;
+      }
+      if (!sessionId || current.session.id === sessionId) {
+        return null;
+      }
+      return current;
+    });
   }
 
   async function requestControl(kind: "stop" | "pause" | "redirect") {
@@ -359,15 +390,22 @@ export function App() {
           <div className="sess-scroll">
             {hasSessions ? sessions.map((session) => (
               <button
-                className={`sess-item ${session.id === selectedId ? "active" : ""} ${isSessionRunning(session) ? "is-running" : ""}`}
-                key={session.id}
-                onBlur={() => setSessionPopover((current) => current?.session.id === session.id ? null : current)}
-                 onClick={() => isMobileMode ? goToMobileRuns(session.id) : navigateToSelection(session.id)}
-                onFocus={(event) => showSessionPopover(session, event.currentTarget)}
-                onMouseEnter={(event) => showSessionPopover(session, event.currentTarget)}
-                onMouseLeave={() => setSessionPopover((current) => current?.session.id === session.id ? null : current)}
-                type="button"
-              >
+                 className={`sess-item ${session.id === selectedId ? "active" : ""} ${isSessionRunning(session) ? "is-running" : ""}`}
+                 key={session.id}
+                 onBlur={() => hideSessionPopover(session.id)}
+                 onClick={() => {
+                   hideSessionPopover(session.id);
+                   if (isMobileMode) {
+                     goToMobileRuns(session.id);
+                   } else {
+                     navigateToSelection(session.id);
+                   }
+                 }}
+                 onFocus={(event) => showSessionPopover(session, event.currentTarget)}
+                 onMouseEnter={(event) => scheduleSessionPopover(session, event.currentTarget)}
+                 onMouseLeave={() => hideSessionPopover(session.id)}
+                 type="button"
+               >
                 <div className="si-row">
                   <span className="si-ch">{getSessionKindLabel(session)}</span>
                   <span className={`si-st ${sessionStatusClass(session.status)}`}>{session.status}</span>

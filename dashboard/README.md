@@ -1,6 +1,6 @@
 # Dashboard Workspace
 
-This directory is reserved for the standalone Crew Copilot dashboard app.
+This directory is reserved for the standalone Claw Copilot dashboard app.
 
 Planned stack:
 

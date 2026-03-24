@@ -39,15 +39,15 @@ describe("summarizeTailscaleStatus", () => {
         }
       },
       {
-        basePath: "/crew-copilot",
+        basePath: "/claw-copilot",
         gatewayOrigin: "http://127.0.0.1:3000"
       }
     );
 
     expect(state.status).toBe("connected");
     expect(state.loginState).toBe("logged-in");
-    expect(state.tailnetUrl).toBe("https://crew-host.example.ts.net/crew-copilot");
-    expect(state.serveCommand).toContain("--set-path=/crew-copilot");
+    expect(state.tailnetUrl).toBe("https://crew-host.example.ts.net/claw-copilot");
+    expect(state.serveCommand).toContain("--set-path=/claw-copilot");
   });
 
   it("marks state as needing login when backend requests auth", () => {
@@ -56,7 +56,7 @@ describe("summarizeTailscaleStatus", () => {
         BackendState: "NeedsLogin"
       },
       {
-        basePath: "/crew-copilot",
+        basePath: "/claw-copilot",
         gatewayOrigin: "http://127.0.0.1:3000"
       }
     );
@@ -68,8 +68,8 @@ describe("summarizeTailscaleStatus", () => {
 
 describe("buildServeCommand", () => {
   it("builds a path-scoped background serve command for local gateway origin", () => {
-    expect(buildServeCommand("http://127.0.0.1:3000", "/crew-copilot")).toBe(
-      "tailscale serve --bg --set-path=/crew-copilot http://127.0.0.1:3000/crew-copilot"
+    expect(buildServeCommand("http://127.0.0.1:3000", "/claw-copilot")).toBe(
+      "tailscale serve --bg --set-path=/claw-copilot http://127.0.0.1:3000/claw-copilot"
     );
   });
 });
@@ -91,7 +91,7 @@ describe("getInstallPlan", () => {
 describe("ensureTailscaleInstalled", () => {
   it("returns install guidance when auto-install is unsupported", () => {
     const status = ensureTailscaleInstalled(
-      { basePath: "/crew-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
+      { basePath: "/claw-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
       "freebsd",
       {
         commandExists: () => false,
@@ -105,7 +105,7 @@ describe("ensureTailscaleInstalled", () => {
 
   it("returns connected status immediately when tailscale is already installed", () => {
     const status = ensureTailscaleInstalled(
-      { basePath: "/crew-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
+      { basePath: "/claw-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
       "darwin",
       {
         commandExists: () => true,
@@ -134,7 +134,7 @@ describe("disableRemoteAccess", () => {
   it("uses tailscale serve reset to disable the remote route", () => {
     let called = false;
     const status = disableRemoteAccess(
-      { basePath: "/crew-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
+      { basePath: "/claw-copilot", gatewayOrigin: "http://127.0.0.1:3000" },
       (_command, args) => {
         called = args.join(" ") === "serve reset";
         return { ok: true, stdout: "", stderr: "", exitCode: 0 };

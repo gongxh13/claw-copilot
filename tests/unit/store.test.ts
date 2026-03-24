@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe("CopilotStore", () => {
   it("creates sessions and runs with stable numbering", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-store-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-store-"));
     dirs.push(root);
     const store = new CopilotStore(root);
 
@@ -54,7 +54,7 @@ describe("CopilotStore", () => {
   });
 
   it("returns paginated session results from the store", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-store-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-store-"));
     dirs.push(root);
     const store = new CopilotStore(root);
 
@@ -78,7 +78,7 @@ describe("CopilotStore", () => {
   });
 
   it("groups artifacts, tasks, agents, and tools by run", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-store-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-store-"));
     dirs.push(root);
     const store = new CopilotStore(root);
 

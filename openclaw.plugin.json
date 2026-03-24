@@ -1,6 +1,6 @@
 {
-  "id": "crew-copilot",
-  "name": "Crew Copilot",
+  "id": "claw-copilot",
+  "name": "Claw Copilot",
   "description": "Run-aware observability dashboard for OpenClaw sessions",
   "version": "0.1.0",
   "configSchema": {
@@ -9,11 +9,11 @@
     "properties": {
       "basePath": {
         "type": "string",
-        "default": "/crew-copilot"
+        "default": "/claw-copilot"
       },
       "dashboardTitle": {
         "type": "string",
-        "default": "ClawCopilot"
+        "default": "Claw Copilot"
       },
       "imVerbosity": {
         "type": "string",

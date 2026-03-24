@@ -21,7 +21,7 @@ afterEach(() => {
 
 describe("CopilotRecorder", () => {
   it("maps tool calls into run, task, agent, event, and artifact records", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -45,7 +45,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("records sub-agent spawn and completion in the task tree", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -70,7 +70,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("links a parent sub-agent node to the spawned child session", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -91,7 +91,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("uses sanitized prompt text from the real sessionId as the session title", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -141,7 +141,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("marks the current run tree as completed when the agent ends", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -161,7 +161,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("keeps prompt text isolated per run within the same session", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -178,7 +178,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("attaches model prompt and reply events to the main task tree agent", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -196,7 +196,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("derives model event agent ownership from the session key for subagents", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -215,7 +215,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("preserves the session channel key during llm input updates", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -229,7 +229,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("does not fall back to provider when no session key is known", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
     const recorder = new CopilotRecorder(store);
@@ -241,7 +241,7 @@ describe("CopilotRecorder", () => {
   });
 
   it("reuses the existing run task and agent when a later tool call arrives after recorder state is rebuilt", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-runtime-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-runtime-"));
     dirs.push(root);
     const store = new CopilotStore(root);
 

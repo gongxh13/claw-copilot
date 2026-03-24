@@ -86,7 +86,7 @@ export function beginTailscaleLogin(options: StatusOptions, runner: CommandRunne
       loginState: "needs-login",
       loginUrl,
       message: "Open the Tailscale sign-in page to connect this machine.",
-      detail: "Complete the browser sign-in, then return here to enable Crew Copilot remote access."
+      detail: "Complete the browser sign-in, then return here to enable Claw Copilot remote access."
     };
   }
 
@@ -122,7 +122,7 @@ export function enableTailscaleServe(
     return {
       ...next,
       serveCommand: command,
-      message: "Crew Copilot remote access could not be enabled automatically.",
+      message: "Claw Copilot remote access could not be enabled automatically.",
       detail: result.stderr || result.stdout || next.detail
     };
   }
@@ -130,7 +130,7 @@ export function enableTailscaleServe(
   return {
     ...next,
     serveCommand: command,
-    message: "Crew Copilot remote access is enabled for your tailnet."
+    message: "Claw Copilot remote access is enabled for your tailnet."
   };
 }
 
@@ -142,13 +142,13 @@ export function disableRemoteAccess(
 
   if (!result.ok) {
     return {
-      message: "Crew Copilot remote access could not be disabled automatically.",
+      message: "Claw Copilot remote access could not be disabled automatically.",
       detail: result.stderr || result.stdout || "Run `tailscale serve reset` manually."
     };
   }
 
   return {
-    message: `Crew Copilot remote access is disabled for ${options.basePath}.`
+    message: `Claw Copilot remote access is disabled for ${options.basePath}.`
   };
 }
 
@@ -211,7 +211,7 @@ export function ensureTailscaleInstalled(
     canAutoInstall: true,
     installCommand: plan.shell,
     message: status.installed
-      ? "Tailscale installation finished. Run `openclaw copilot tailscale login` next."
+      ? "Tailscale installation finished. Run `openclaw claw-copilot remote enable` next."
       : status.message
   };
 }
@@ -232,7 +232,7 @@ export function summarizeTailscaleStatus(raw: Record<string, unknown>, options: 
       hostname,
       serveCommand,
       installUrl: INSTALL_URL,
-      message: "Sign in to Tailscale to make Crew Copilot remotely reachable from your tailnet.",
+      message: "Sign in to Tailscale to make Claw Copilot remotely reachable from your tailnet.",
       detail: `Current backend state: ${backendState}`
     };
   }
@@ -247,7 +247,7 @@ export function summarizeTailscaleStatus(raw: Record<string, unknown>, options: 
     serveCommand,
     installUrl: INSTALL_URL,
     message: dnsName
-      ? "This machine is connected to Tailscale. You can expose only Crew Copilot to your tailnet."
+      ? "This machine is connected to Tailscale. You can expose only Claw Copilot to your tailnet."
       : "This machine is connected to Tailscale."
   };
 }

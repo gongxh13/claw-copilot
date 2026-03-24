@@ -102,11 +102,12 @@ describe("buildEventRows", () => {
     };
 
     const rows = buildEventRows(runView);
-    expect(rows[0]?.toolDetail).toMatchObject({
+    const toolRow = rows.find((row) => row.kind === "tool");
+    expect(toolRow?.toolDetail).toMatchObject({
       input: "ls -la",
       outputTexts: ["total 80"]
     });
-    expect(rows[0]?.toolDetail?.meta).toEqual(expect.arrayContaining([
+    expect(toolRow?.toolDetail?.meta).toEqual(expect.arrayContaining([
       { label: "Status", value: "completed" },
       { label: "Exit code", value: "0" }
     ]));

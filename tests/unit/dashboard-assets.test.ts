@@ -5,10 +5,10 @@ import { injectDashboardShell } from "../../plugin/src/server/dashboard-assets.j
 describe("injectDashboardShell", () => {
   it("injects title, base path, and bootstrap payload into the dashboard shell", () => {
     const html = injectDashboardShell(
-      "<html><head><title>__CREW_TITLE__</title></head><body data-base='__CREW_BASE_PATH__'><script>window.__CREW_COPILOT__ = __CREW_BOOTSTRAP__;</script></body></html>",
+      "<html><head><title>__CREW_TITLE__</title></head><body data-base='__CREW_BASE_PATH__'><script>window.__CLAW_COPILOT__ = __CREW_BOOTSTRAP__;</script></body></html>",
       {
-        title: "ClawCopilot",
-        basePath: "/crew-copilot",
+        title: "Claw Copilot",
+        basePath: "/claw-copilot",
         payload: {
           sessions: [
             {
@@ -26,10 +26,10 @@ describe("injectDashboardShell", () => {
       }
     );
 
-    expect(html).toContain("ClawCopilot");
-    expect(html).toContain("/crew-copilot");
-    expect(html).toContain('<base href="/crew-copilot/">');
-    expect(html.indexOf('<base href="/crew-copilot/">')).toBeLessThan(html.indexOf("<script"));
+    expect(html).toContain("Claw Copilot");
+    expect(html).toContain("/claw-copilot");
+    expect(html).toContain('<base href="/claw-copilot/">');
+    expect(html.indexOf('<base href="/claw-copilot/">')).toBeLessThan(html.indexOf("<script"));
     expect(html).toContain("session-1");
     expect(html).not.toContain("__CREW_BOOTSTRAP__");
   });

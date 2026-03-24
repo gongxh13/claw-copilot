@@ -4,8 +4,9 @@ import path from "node:path";
 import { URL } from "node:url";
 
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
+import qrcode from "qrcode-terminal";
 
-import type { DashboardPayload } from "./core/types.js";
+import type { DashboardPayload, TailscaleStatus } from "./core/types.js";
 import { CopilotRecorder } from "./runtime/recorder.js";
 import { injectDashboardShell, loadDashboardShell, resolveDashboardAssetPath } from "./server/dashboard-assets.js";
 import { DashboardSseHub } from "./server/sse.js";
@@ -19,13 +20,13 @@ type PluginConfig = {
 };
 
 const plugin = {
-  id: "crew-copilot",
-  name: "Crew Copilot",
+  id: "claw-copilot",
+  name: "Claw Copilot",
   description: "Run-aware observability dashboard for OpenClaw",
   register(api: OpenClawPluginApi) {
     const pluginConfig = (api.pluginConfig ?? {}) as PluginConfig;
     const basePath = normalizeBasePath(pluginConfig.basePath);
-    const title = pluginConfig.dashboardTitle ?? "ClawCopilot";
+    const title = pluginConfig.dashboardTitle ?? "Claw Copilot";
     const store = createStore(api, pluginConfig);
     store.markStaleRunsAsInterrupted(10 * 60 * 1000);
     const recorder = new CopilotRecorder(store);
@@ -37,10 +38,6 @@ const plugin = {
       publishSoon();
     });
     api.runtime.events.onSessionTranscriptUpdate(() => {
-      publishSoon();
-    });
-
-    api.runtime.events.onAgentEvent(() => {
       publishSoon();
     });
 
@@ -194,7 +191,7 @@ const plugin = {
 
         if (url.pathname === `${basePath}/health`) {
           res.setHeader("content-type", "application/json; charset=utf-8");
-          res.end(JSON.stringify({ ok: true, plugin: "crew-copilot" }));
+          res.end(JSON.stringify({ ok: true, plugin: "claw-copilot" }));
           return true;
         }
 
@@ -211,80 +208,50 @@ const plugin = {
     });
 
     api.registerCli(({ program }: { program: CliCommandLike }) => {
-      const copilot = program.command("copilot").description("Crew Copilot plugin commands");
+      const clawCopilot = program.command("claw-copilot").description("Claw Copilot plugin commands");
 
-      copilot
+      clawCopilot
         .command("status")
-        .description("Print Crew Copilot session summary")
+        .description("Print Claw Copilot session summary")
         .action(() => {
           const sessions = store.listSessions();
           process.stdout.write(`${sessions.length} sessions tracked\n`);
         });
 
-      const remote = copilot.command("remote").description("Manage optional remote access for Crew Copilot");
+      const remote = clawCopilot.command("remote").description("Manage optional remote access for Claw Copilot");
 
       remote
         .command("status")
-        .description("Show remote access status for Crew Copilot")
+        .description("Show remote access status for Claw Copilot")
         .action(() => {
           const status = ensureTailscaleInstalled({ basePath, gatewayOrigin: getCliGatewayOrigin() });
-          process.stdout.write(`${status.message}\n`);
-          if (status.detail) {
-            process.stdout.write(`${status.detail}\n`);
-          }
-          if (status.installCommand) {
-            process.stdout.write(`Install command: ${status.installCommand}\n`);
-          }
-          if (status.tailnetUrl) {
-            process.stdout.write(`Tailnet URL: ${status.tailnetUrl}\n`);
-          }
+          printRemoteAccessStatus(status, basePath, "status");
         });
 
       remote
         .command("enable")
-        .description("Enable remote Crew Copilot access through Tailscale")
+        .description("Enable remote Claw Copilot access through Tailscale")
         .action(() => {
           const origin = getCliGatewayOrigin();
           const ensured = ensureTailscaleInstalled({ basePath, gatewayOrigin: origin });
           if (!ensured.installed) {
-            process.stdout.write(`${ensured.message}\n`);
-            if (ensured.installCommand) {
-              process.stdout.write(`Install command: ${ensured.installCommand}\n`);
-            }
-            if (ensured.detail) {
-              process.stdout.write(`${ensured.detail}\n`);
-            }
+            printRemoteAccessStatus(ensured, basePath, "enable");
             return;
           }
 
           const loginStatus = beginTailscaleLogin({ basePath, gatewayOrigin: origin });
           if (loginStatus.loginState !== "logged-in") {
-            process.stdout.write(`${loginStatus.message}\n`);
-            if (loginStatus.loginUrl) {
-              process.stdout.write(`Login URL: ${loginStatus.loginUrl}\n`);
-            }
-            if (loginStatus.detail) {
-              process.stdout.write(`${loginStatus.detail}\n`);
-            }
+            printRemoteAccessStatus(loginStatus, basePath, "enable");
             return;
           }
 
           const status = enableTailscaleServe(origin, { basePath, gatewayOrigin: origin });
-          process.stdout.write(`${status.message}\n`);
-          if (status.tailnetUrl) {
-            process.stdout.write(`Tailnet URL: ${status.tailnetUrl}\n`);
-          }
-          if (status.serveCommand) {
-            process.stdout.write(`Serve command: ${status.serveCommand}\n`);
-          }
-          if (status.detail) {
-            process.stdout.write(`${status.detail}\n`);
-          }
+          printRemoteAccessStatus(status, basePath, "enable");
         });
 
       remote
         .command("disable")
-        .description("Disable remote Crew Copilot access")
+        .description("Disable remote Claw Copilot access")
         .action(() => {
           const status = disableRemoteAccess({ basePath, gatewayOrigin: getCliGatewayOrigin() });
           process.stdout.write(`${status.message}\n`);
@@ -299,7 +266,7 @@ const plugin = {
 export default plugin;
 
 function createStore(api: OpenClawPluginApi, _pluginConfig: PluginConfig): CopilotStore {
-  const root = path.join(api.runtime.state.resolveStateDir(), "crew-copilot");
+  const root = path.join(api.runtime.state.resolveStateDir(), "claw-copilot");
   mkdirSync(root, { recursive: true });
   return new CopilotStore(root);
 }
@@ -367,7 +334,7 @@ function parseDashboardRoute(pathname: string, basePath: string): { sessionId?: 
 
 function normalizeBasePath(value?: string): string {
   if (!value) {
-    return "/crew-copilot";
+    return "/claw-copilot";
   }
 
   return value.startsWith("/") ? value.replace(/\/$/, "") : `/${value.replace(/\/$/, "")}`;
@@ -388,6 +355,79 @@ function createPublishScheduler(publish: () => void, delayMs = 100): () => void 
       publish();
     }, delayMs);
   };
+}
+
+function printRemoteAccessStatus(status: TailscaleStatus, basePath: string, mode: "status" | "enable"): void {
+  const lines = [
+    "",
+    "=== Claw Copilot Remote Access ===",
+    `Status: ${status.status}`,
+    `${status.message}`
+  ];
+
+  if (status.tailnetUrl) {
+    lines.push("", `Claw Copilot URL: ${status.tailnetUrl}`);
+  }
+  if (status.loginUrl) {
+    lines.push("", `Tailscale login URL: ${status.loginUrl}`);
+  }
+  if (status.installCommand) {
+    lines.push("", `Install command: ${status.installCommand}`);
+  }
+  if (status.serveCommand) {
+    lines.push(`Serve command: ${status.serveCommand}`);
+  }
+  if (status.detail) {
+    lines.push("", status.detail);
+  }
+
+  lines.push(...buildRemoteNextSteps(status, basePath, mode));
+  process.stdout.write(`${lines.join("\n")}\n`);
+
+  const qrTargets = buildQrTargets(status);
+  for (const target of qrTargets) {
+    process.stdout.write(`\n${target.label}\n`);
+    qrcode.generate(target.value, { small: true });
+    process.stdout.write(`${target.value}\n`);
+  }
+}
+
+function buildRemoteNextSteps(status: TailscaleStatus, basePath: string, mode: "status" | "enable"): string[] {
+  const lines = ["", "Next steps:"];
+  if (!status.installed) {
+    lines.push("1. Install Tailscale on this machine.");
+    lines.push("2. Install Tailscale on your phone or other computer.");
+    lines.push("3. Run `openclaw claw-copilot remote enable` again.");
+    return lines;
+  }
+  if (status.loginState !== "logged-in") {
+    lines.push("1. Complete Tailscale sign-in on this machine.");
+    lines.push("2. Install Tailscale on your phone or laptop and sign into the same tailnet.");
+    lines.push(`3. Re-run \`openclaw claw-copilot remote ${mode}\` after login finishes.`);
+    return lines;
+  }
+  if (status.tailnetUrl) {
+    lines.push("1. Open Tailscale on your phone or laptop and sign into the same tailnet.");
+    lines.push("2. Visit the Claw Copilot URL above from any connected device.");
+    lines.push(`3. Keep using Tailscale so you do not need to expose ${basePath} on the public internet.`);
+    return lines;
+  }
+  lines.push("1. Run `openclaw claw-copilot remote enable` to expose Claw Copilot to your tailnet.");
+  lines.push("2. Install Tailscale on your phone or laptop and sign into the same tailnet.");
+  return lines;
+}
+
+function buildQrTargets(status: TailscaleStatus): Array<{ label: string; value: string }> {
+  const targets: Array<{ label: string; value: string }> = [];
+  if (status.loginUrl) {
+    targets.push({ label: "Scan to finish Tailscale login:", value: status.loginUrl });
+  }
+  if (status.tailnetUrl) {
+    targets.push({ label: "Scan to open Claw Copilot on your phone:", value: status.tailnetUrl });
+  } else if (status.installUrl) {
+    targets.push({ label: "Scan to install Tailscale on your phone:", value: status.installUrl });
+  }
+  return targets;
 }
 
 type CliCommandLike = {

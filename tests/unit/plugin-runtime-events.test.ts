@@ -8,7 +8,7 @@ import plugin from "../../plugin/src/index.js";
 
 describe("plugin runtime event wiring", () => {
   it("subscribes to runtime agent and transcript updates", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "crew-copilot-plugin-"));
+    const root = mkdtempSync(path.join(os.tmpdir(), "claw-copilot-plugin-"));
     const onAgentEvent = vi.fn(() => () => true);
     const onSessionTranscriptUpdate = vi.fn(() => () => {});
 

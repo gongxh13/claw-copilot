@@ -23,7 +23,7 @@ export function loadDashboardShell(moduleUrl: string): string {
     }
   }
 
-  throw new Error(`Crew Copilot dashboard assets not found. Tried: ${candidates.join(", ")}`);
+  throw new Error(`Claw Copilot dashboard assets not found. Tried: ${candidates.join(", ")}`);
 }
 
 export function resolveDashboardAssetPath(moduleUrl: string, relativePath: string): string | null {

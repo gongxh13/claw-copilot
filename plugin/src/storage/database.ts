@@ -7,7 +7,7 @@ import { SCHEMA_SQL } from "./schema.js";
 
 export function openDatabase(rootDir: string): Database.Database {
   mkdirSync(rootDir, { recursive: true });
-  const filePath = path.join(rootDir, "crew-copilot.db");
+  const filePath = path.join(rootDir, "claw-copilot.db");
   const db = new Database(filePath);
   db.exec(SCHEMA_SQL);
   try {

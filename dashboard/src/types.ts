@@ -156,8 +156,8 @@ export type TailscaleStatus = {
 
 declare global {
   interface Window {
-    __CREW_COPILOT__?: DashboardPayload;
-    __CREW_COPILOT_BASE_PATH__?: string;
-    __CREW_COPILOT_TITLE__?: string;
+    __CLAW_COPILOT__?: DashboardPayload;
+    __CLAW_COPILOT_BASE_PATH__?: string;
+    __CLAW_COPILOT_TITLE__?: string;
   }
 }

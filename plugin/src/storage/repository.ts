@@ -25,7 +25,7 @@ export class CopilotStore {
   private readonly filePath: string;
 
   constructor(private readonly rootDir: string) {
-    this.filePath = path.join(rootDir, "crew-copilot.db");
+    this.filePath = path.join(rootDir, "claw-copilot.db");
     this.db = openDatabase(rootDir);
   }
 
