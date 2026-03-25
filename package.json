@@ -15,13 +15,14 @@
   "files": [
     "dist",
     "openclaw.plugin.json",
-    "README.md"
+    "README.md",
+    "node_modules"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "cd dashboard && npm run build && cd .. && tsup plugin/src/index.ts --format esm --dts --out-dir dist --external better-sqlite3 --external qrcode-terminal && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard",
+    "build": "cd dashboard && npm run build && cd .. && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard",
     "dev": "tsx watch plugin/src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
