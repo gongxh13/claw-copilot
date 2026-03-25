@@ -46,8 +46,11 @@ export function resolveDashboardAssetPath(moduleUrl: string, relativePath: strin
 export function injectDashboardShell(template: string, options: ShellOptions): string {
   const payload = JSON.stringify(options.payload).replaceAll("<", "\\u003c");
   const baseTag = `<base href="${escapeForTemplate(withTrailingSlash(options.basePath))}">`;
+  const basePath = options.basePath;
   return template
     .replace("<head>", `<head>${baseTag}`)
+    .replaceAll("./assets/", `${basePath}/assets/`)
+    .replaceAll('="./assets/', `="${basePath}/assets/`)
     .replaceAll("__CREW_TITLE__", escapeForTemplate(options.title))
     .replaceAll("__CREW_BASE_PATH__", escapeForTemplate(options.basePath))
     .replace("__CREW_BOOTSTRAP__", payload);

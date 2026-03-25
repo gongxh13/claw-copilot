@@ -8,6 +8,7 @@ import qrcode from "qrcode-terminal";
 
 import type { DashboardPayload, TailscaleStatus } from "./core/types.js";
 import { CopilotRecorder } from "./runtime/recorder.js";
+import { stopSessionViaCli, resolveGatewayTokenFromEnv } from "./runtime/stop-session.js";
 import { injectDashboardShell, loadDashboardShell, resolveDashboardAssetPath } from "./server/dashboard-assets.js";
 import { getOrCreateSseHub } from "./server/sse.js";
 import { CopilotStore } from "./storage/repository.js";
@@ -172,25 +173,36 @@ const plugin = {
 
         if (url.pathname === `${basePath}/api/control/stop`) {
           const sessionKey = url.searchParams.get("sessionKey") ?? payload.selectedSession?.session.channelId;
-          if (!sessionKey) {
+          const sessionId = url.searchParams.get("sessionId") ?? payload.selectedSession?.session.id;
+          let runIdParam = url.searchParams.get("runId");
+          if (runIdParam === "" || runIdParam === "null") {
+            runIdParam = null;
+          }
+          const hasExplicitRunId = !!(runIdParam && runIdParam.length > 0);
+          const runId = hasExplicitRunId ? (runIdParam as string) : (payload.selectedSession?.runs.at(-1)?.id ?? undefined);
+          if (!sessionId) {
             res.statusCode = 400;
-            res.end(JSON.stringify({ error: "Missing sessionKey" }));
+            res.end(JSON.stringify({ error: "Missing sessionId" }));
             return true;
           }
-          try {
-            // Send /stop command to the session using subagent.run
-            await api.runtime.subagent.run({
-              sessionKey,
-              message: "/stop",
-              deliver: false,
-            });
-            res.setHeader("content-type", "application/json; charset=utf-8");
-            res.setHeader("cache-control", "no-store, max-age=0");
-            res.end(JSON.stringify({ ok: true }));
-          } catch (err) {
-            res.statusCode = 500;
-            res.end(JSON.stringify({ error: String(err) }));
+          const record = recorder.requestControl(sessionId, runId, "stop");
+          sseHub.publish();
+
+          let stopResult: { ok: boolean; error?: string } = { ok: true };
+          if (sessionKey) {
+            const envToken = resolveGatewayTokenFromEnv();
+            const configToken = api.config.gateway?.auth?.token;
+            const token = envToken ?? (typeof configToken === "string" ? configToken : undefined);
+            if (token) {
+              stopResult = await stopSessionViaCli(sessionKey, token, hasExplicitRunId ? runId : undefined);
+            } else {
+              stopResult = { ok: false, error: "No gateway token" };
+            }
           }
+
+          res.setHeader("content-type", "application/json; charset=utf-8");
+          res.setHeader("cache-control", "no-store, max-age=0");
+          res.end(JSON.stringify({ ...record, stopResult }));
           return true;
         }
 

@@ -44,7 +44,7 @@ describe("buildAgentSteps", () => {
       }
     ];
 
-    const steps = buildAgentSteps(toolCalls, events, "agent-1");
+    const steps = buildAgentSteps(toolCalls, new Set(["agent-1"]));
 
     expect(steps.map((step) => step.kind)).toEqual(["tool"]);
     expect(steps.map((step) => step.label)).toEqual(["read"]);

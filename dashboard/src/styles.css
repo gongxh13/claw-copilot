@@ -287,3 +287,30 @@ button { border: 0; background: transparent; color: inherit; }
   .sess-sidebar.mob-hidden { display: none; }
   .ocard { width: calc(100vw - 32px); }
 }
+
+.notification {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  padding: 12px 16px;
+  border-radius: var(--r);
+  font-size: 13px;
+  z-index: 1000;
+  animation: slideIn 0.2s ease-out;
+  max-width: 320px;
+  word-break: break-word;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.notification-error {
+  background: var(--red2);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.notification-success {
+  background: var(--green2);
+  border: 1px solid var(--green);
+  color: var(--green);
+}

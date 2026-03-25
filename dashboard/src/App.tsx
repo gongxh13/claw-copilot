@@ -31,8 +31,8 @@ export function App() {
   });
   const [mobileView, setMobileView] = useState<MobileView>(deriveMobileView(initialRoute.sessionId, initialRoute.runId));
   const [detailTab, setDetailTab] = useState<"timeline" | "artifacts">("timeline");
-  const [overlay, setOverlay] = useState<null | "stop" | "pause" | "redirect">(null);
-  const [redirectInput, setRedirectInput] = useState("");
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: "error" | "success" } | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({});
@@ -115,10 +115,20 @@ export function App() {
         if (reconnectTimeout) {
           clearTimeout(reconnectTimeout);
         }
-        const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
-        retryCount = Math.min(retryCount + 1, 5);
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+        retryCount = Math.min(retryCount + 1, 10);
         reconnectTimeout = setTimeout(connect, delay);
       };
+
+      source.addEventListener("close", () => {
+        if (disposed) {
+          return;
+        }
+        if (reconnectTimeout) {
+          clearTimeout(reconnectTimeout);
+        }
+        reconnectTimeout = setTimeout(connect, 1000);
+      });
 
       const handle = (type: string) => (event: MessageEvent<string>) => {
         retryCount = 0;
@@ -136,8 +146,16 @@ export function App() {
 
     connect();
 
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        connect();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       disposed = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
       }
@@ -341,20 +359,29 @@ export function App() {
     });
   }
 
-  async function requestControl(kind: "stop" | "pause" | "redirect") {
+  async function stopSession() {
     if (!selectedSession) {
       return;
     }
-    const runId = selectedRunView?.run.id ?? selectedSession.runs.at(-1)?.id;
-    const query = new URLSearchParams({ sessionId: selectedSession.session.id });
-    if (runId) {
-      query.set("runId", runId);
+    const sessionKey = selectedSession.session.channelId;
+    if (!sessionKey) {
+      return;
     }
-    if (kind === "redirect" && redirectInput.trim()) {
-      query.set("value", redirectInput.trim());
+    const query = new URLSearchParams({ sessionKey });
+    try {
+      const resp = await fetch(`${basePath}/api/control/stop?${query.toString()}`, { method: "POST" });
+      const result = await resp.json();
+      if (!resp.ok) {
+        setNotification({ message: `Failed: ${result.error || resp.statusText}`, type: "error" });
+      } else if (result.stopResult && !result.stopResult.ok) {
+        setNotification({ message: `Stop failed: ${result.stopResult.error}`, type: "error" });
+      } else {
+        setNotification({ message: "Stop command sent", type: "success" });
+      }
+    } catch (err) {
+      setNotification({ message: `Request failed: ${err}`, type: "error" });
     }
-    await fetch(`${basePath}/api/control/${kind}?${query.toString()}`, { method: "POST" });
-    setOverlay(null);
+    setShowStopConfirm(false);
   }
 
   function sessionTimeLabel(session: SessionListItem): string {
@@ -364,8 +391,20 @@ export function App() {
     return `${Math.max(1, Math.floor(diff / 3_600_000))}h`;
   }
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   return (
     <>
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
       <nav className="topnav">
         <button className={`mob-back ${visibleDetail ? "show" : ""}`} onClick={goBackMobile} type="button">
           ← Back
@@ -459,9 +498,9 @@ export function App() {
                   {selectedRunView ? <span className={`detail-status ${statusClass(selectedRunView.run.status)}`}>{selectedRunView.run.status}</span> : null}
                 </div>
                 <div className="ctrl-inline">
-                  <button className="cbtn cb-pause" onClick={() => setOverlay("pause")} type="button">⏸</button>
-                  <button className="cbtn cb-redir" onClick={() => setOverlay("redirect")} type="button">↩</button>
-                  <button className="cbtn cb-stop" onClick={() => setOverlay("stop")} type="button">◼</button>
+                  {selectedSession?.session && isSessionRunning(selectedSession.session) ? (
+                    <button className="cbtn cb-stop" onClick={() => setShowStopConfirm(true)} type="button">◼</button>
+                  ) : null}
                 </div>
               </div>
               {selectedRunView ? (
@@ -488,39 +527,20 @@ export function App() {
                 </>
               ) : <div className="empty-pane">Select a run to inspect its details.</div>}
             </div>
-
-            <div className="input-area">
-              <div className="ctrl-row">
-                <button className="cbtn cb-pause" onClick={() => setOverlay("pause")} type="button">⏸ Pause</button>
-                <button className="cbtn cb-redir" onClick={() => setOverlay("redirect")} type="button">↩ Redirect</button>
-                <button className="cbtn cb-stop" onClick={() => setOverlay("stop")} type="button">◼ Stop</button>
-              </div>
-              <div className="input-row">
-                <textarea className="ibox" onChange={(event) => setRedirectInput(event.target.value)} placeholder="Continue the conversation..." rows={2} value={redirectInput} />
-                <button className="send-btn" onClick={() => setOverlay("redirect")} type="button">↑</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      <div className={`overlay ${overlay ? "show" : ""}`}>
+      <div className={`overlay ${showStopConfirm ? "show" : ""}`}>
         <div className="ocard">
-          <h3>{overlay === "stop" ? "Stop current run" : overlay === "pause" ? "Pause current run" : "Redirect task"}</h3>
-          <p>
-            {overlay === "redirect"
-              ? "Write a new instruction into the control queue so the plugin can pick it up on the next step."
-              : "This sends a real control request to the plugin and records it in SQLite."}
-          </p>
-          {overlay === "redirect" ? <textarea className="ibox overlay-box" onChange={(event) => setRedirectInput(event.target.value)} rows={4} value={redirectInput} /> : null}
+          <h3>Stop current run</h3>
+          <p>This will send a /stop command to interrupt the current session.</p>
           <div className="oactions">
-            {overlay ? (
-              <button className={`oact ${overlay === "stop" ? "oa-stop" : overlay === "pause" ? "oa-pause" : "oa-redir"}`} onClick={() => requestControl(overlay)} type="button">
-                <div className="ol">Confirm {overlay === "stop" ? "stop" : overlay === "pause" ? "pause" : "redirect"}</div>
-                <div className="od">Write this request to control actions</div>
-              </button>
-            ) : null}
-            <button className="oact oa-cancel" onClick={() => setOverlay(null)} type="button">Cancel</button>
+            <button className="oact oa-stop" onClick={stopSession} type="button">
+              <div className="ol">Confirm stop</div>
+              <div className="od">Send /stop command to the session</div>
+            </button>
+            <button className="oact oa-cancel" onClick={() => setShowStopConfirm(false)} type="button">Cancel</button>
           </div>
         </div>
       </div>
