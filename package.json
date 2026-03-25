@@ -20,7 +20,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "cd dashboard && npm run build && cd .. && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard && mkdir -p dist/node_modules && cp -R node_modules/better-sqlite3 node_modules/bindings node_modules/file-uri-to-path dist/node_modules/",
+    "build": "cd dashboard && npm install && npm run build && cd .. && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard && mkdir -p dist/node_modules && cp -R node_modules/better-sqlite3 node_modules/bindings node_modules/file-uri-to-path dist/node_modules/",
     "dev": "tsx watch plugin/src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
