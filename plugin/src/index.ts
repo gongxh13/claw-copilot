@@ -1,10 +1,24 @@
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { URL } from "node:url";
+import { execSync } from "node:child_process";
 
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import qrcode from "qrcode-terminal";
+
+function ensureSqlite3Built(): void {
+  const pluginDir = path.dirname(new URL(import.meta.url).pathname);
+  const sqlite3Dir = path.join(pluginDir, "node_modules", "@vscode", "sqlite3");
+  const nodeFile = path.join(sqlite3Dir, "build", "Release", "vscode-sqlite3.node");
+  if (!existsSync(nodeFile)) {
+    try {
+      execSync("npm rebuild @vscode/sqlite3", { cwd: pluginDir, stdio: "ignore" });
+    } catch {
+      // Ignore errors
+    }
+  }
+}
 
 import type { DashboardPayload, TailscaleStatus } from "./core/types.js";
 import { CopilotRecorder } from "./runtime/recorder.js";
@@ -25,6 +39,7 @@ const plugin = {
   name: "Claw Copilot",
   description: "Run-aware observability dashboard for OpenClaw",
   register(api: OpenClawPluginApi) {
+    ensureSqlite3Built();
     const pluginConfig = (api.pluginConfig ?? {}) as PluginConfig;
     const basePath = normalizeBasePath(pluginConfig.basePath);
     const title = pluginConfig.dashboardTitle ?? "Claw Copilot";
