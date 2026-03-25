@@ -1,6 +1,6 @@
 {
   "name": "claw-copilot",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Run-aware observability dashboard plugin for OpenClaw",
   "workspaces": [
     "dashboard"
@@ -21,26 +21,7 @@
     "dev": "tsx watch plugin/src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run check --workspace dashboard && tsc --noEmit"
-  },
-  "keywords": [
-    "openclaw",
-    "plugin",
-    "dashboard",
-    "observability"
-  ],
-  "license": "MIT",
-  "peerDependencies": {
-    "openclaw": ">=2026.3.12"
-  },
-  "dependencies": {
-    "@types/qrcode-terminal": "^0.12.2",
-    "@types/ws": "^8.18.0",
-    "better-sqlite3": "^12.2.0",
-    "qrcode-terminal": "^0.12.0",
-    "ws": "^8.19.0"
-  },
-  "scripts": {
+    "check": "npm run check --workspace dashboard && tsc --noEmit",
     "postinstall": "npm rebuild better-sqlite3"
   },
   "devDependencies": {
