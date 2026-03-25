@@ -1,6 +1,6 @@
 {
   "name": "claw-copilot",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Run-aware observability dashboard plugin for OpenClaw",
   "repository": {
     "type": "git",
