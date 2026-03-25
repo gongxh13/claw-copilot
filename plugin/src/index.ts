@@ -9,11 +9,11 @@ import qrcode from "qrcode-terminal";
 
 function ensureSqlite3Built(): void {
   const pluginDir = path.dirname(new URL(import.meta.url).pathname);
-  const sqlite3Dir = path.join(pluginDir, "node_modules", "@vscode", "sqlite3");
-  const nodeFile = path.join(sqlite3Dir, "build", "Release", "vscode-sqlite3.node");
+  const sqlite3Dir = path.join(pluginDir, "node_modules", "better-sqlite3");
+  const nodeFile = path.join(sqlite3Dir, "build", "Release", "better_sqlite3.node");
   if (!existsSync(nodeFile)) {
     try {
-      execSync("npm rebuild @vscode/sqlite3", { cwd: pluginDir, stdio: "ignore" });
+      execSync("npm rebuild better-sqlite3", { cwd: pluginDir, stdio: "ignore" });
     } catch {
       // Ignore errors
     }

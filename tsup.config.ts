@@ -5,7 +5,7 @@ export default defineConfig({
   format: 'esm',
   dts: true,
   outDir: 'dist',
-  external: ['@vscode/sqlite3', 'sqlite3'],
+  external: ['better-sqlite3'],
   noExternal: ['qrcode-terminal'],
   tsconfig: './tsconfig.build.json',
 })
