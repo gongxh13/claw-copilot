@@ -12,6 +12,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "dist/node_modules",
     "openclaw.plugin.json",
     "README.md"
   ],
@@ -19,7 +20,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "cd dashboard && npm install && npm run build && cd .. && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard",
+    "build": "cd dashboard && npm install && npm run build && cd .. && npm install && npm rebuild @vscode/sqlite3 && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard && mkdir -p dist/node_modules/@vscode && cp -R node_modules/@vscode/sqlite3 dist/node_modules/@vscode/",
     "dev": "tsx watch plugin/src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
