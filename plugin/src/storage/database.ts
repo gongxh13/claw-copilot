@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-import Database from "better-sqlite3";
+import Database from "@vscode/sqlite3";
 
 import { SCHEMA_SQL } from "./schema.js";
 

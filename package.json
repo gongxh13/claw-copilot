@@ -12,7 +12,6 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "dist/node_modules",
     "openclaw.plugin.json",
     "README.md"
   ],
@@ -20,15 +19,13 @@
     "access": "public"
   },
   "scripts": {
-    "build": "cd dashboard && npm install && npm run build && cd .. && npm rebuild better-sqlite3 && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard && mkdir -p dist/node_modules && cp -R node_modules/better-sqlite3 node_modules/bindings node_modules/file-uri-to-path dist/node_modules/",
+    "build": "cd dashboard && npm install && npm run build && cd .. && tsup --config tsup.config.ts && rm -rf dist/dashboard && cp -R dashboard/dist dist/dashboard",
     "dev": "tsx watch plugin/src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run check --workspace dashboard && tsc --noEmit",
-    "postinstall": "npm rebuild better-sqlite3"
+    "check": "npm run check --workspace dashboard && tsc --noEmit"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.3.0",
     "openclaw": "^2026.3.13",
     "tsup": "^8.5.0",
@@ -42,6 +39,6 @@
     ]
   },
   "dependencies": {
-    "better-sqlite3": "^12.8.0"
+    "@vscode/sqlite3": "^5.1.12-vscode"
   }
 }
