@@ -84,7 +84,7 @@ Claw Copilot is meant to be useful across devices, not just on the machine runni
 ### 1. Install into OpenClaw from npm
 
 ```bash
-openclaw plugins install @gongxh13/claw-copilot
+openclaw plugins install claw-copilot
 openclaw gateway restart
 ```
 
