@@ -26,6 +26,15 @@ export function resolveSseSnapshot(payload: DashboardPayload, selectedSessionId?
   };
 }
 
+let globalSseHub: DashboardSseHub | undefined;
+
+export function getOrCreateSseHub(store: CopilotStore): DashboardSseHub {
+  if (!globalSseHub) {
+    globalSseHub = new DashboardSseHub(store);
+  }
+  return globalSseHub;
+}
+
 export class DashboardSseHub {
   private readonly clients = new Set<SseClient>();
 
@@ -43,7 +52,7 @@ export class DashboardSseHub {
 
     const heartbeat = setInterval(() => {
       res.write(": keep-alive\n\n");
-    }, 15000);
+    }, 5000);
 
     const client: SseClient = { res, selectedSessionId, page, pageSize, heartbeat };
     this.clients.add(client);

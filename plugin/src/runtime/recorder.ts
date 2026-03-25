@@ -287,6 +287,46 @@ export class CopilotRecorder {
       }
     }
 
+    // Handle sessions_spawn tool - similar to sessions_send but uses childSessionKey
+    if (event.toolName === "sessions_spawn" && !event.error && event.result && taskId) {
+      try {
+        const resultObj = typeof event.result === "string" ? JSON.parse(event.result) : event.result;
+        const content = resultObj?.content?.[0];
+        const parsed = content?.text ? JSON.parse(content.text) : content;
+        // sessions_spawn returns childSessionKey instead of sessionKey
+        const childSessionKey = parsed?.childSessionKey;
+        if (childSessionKey) {
+          const subagentName = parsed?.label ?? childSessionKey.split(":")[1] ?? "subagent";
+          const subagentId = `subagent-${ctx.runId}-${Date.now()}`;
+          this.store.upsertAgent({
+            id: subagentId,
+            sessionId: ctx.sessionId,
+            runId: ctx.runId,
+            taskId: taskId,
+            name: subagentName,
+            status: "active",
+            startedAt: now,
+            depth: 1,
+            linkedSessionId: childSessionKey,
+            triggeredRunId: parsed?.runId
+          });
+          this.store.appendEvent({
+            id: randomUUID(),
+            sessionId: ctx.sessionId,
+            runId: ctx.runId,
+            taskId,
+            agentId: subagentId,
+            kind: "subagent",
+            label: `Sub-agent · ${subagentName}`,
+            detail: childSessionKey,
+            createdAt: now
+          });
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+
     const artifact = this.createArtifactFromTool(ctx.sessionId, ctx.runId, event, ctx.agentId ?? "main", toolCallId);
     if (artifact) {
       this.store.appendArtifact(artifact);
@@ -398,9 +438,31 @@ export class CopilotRecorder {
 
   onSubagentSpawned(event: SubagentSpawnedEvent, ctx: SubagentContext): void {
     const runId = event.runId ?? ctx.runId;
-    const sessionId = ctx.requesterSessionKey;
-    if (!runId || !sessionId) {
+    const requesterSessionKey = ctx.requesterSessionKey;
+    if (!runId || !requesterSessionKey) {
       return;
+    }
+
+    // 查找正确的session ID（数据库中的主键）
+    // requesterSessionKey可能是session key（channel_id）或session ID
+    // 先尝试作为session key查找，如果找不到则直接使用（可能是session ID）
+    let sessionId = this.store.getSessionIdByChannelId(requesterSessionKey);
+    if (!sessionId) {
+      // 可能requesterSessionKey已经是session ID
+      sessionId = requesterSessionKey;
+    }
+
+    // 检查run是否存在
+    const runExists = this.store.runExists(runId, sessionId);
+    if (!runExists) {
+      // 如果run不存在，创建一个run记录
+      this.store.upsertRun({
+        id: runId,
+        sessionId,
+        userInput: `Subagent spawn: ${event.label ?? event.agentId}`,
+        startedAt: Date.now(),
+        status: "running"
+      });
     }
 
     const task = this.store.createTaskForRun(runId, sessionId, event.label ?? event.agentId);
@@ -441,9 +503,18 @@ export class CopilotRecorder {
 
   onSubagentEnded(event: SubagentEndedEvent, ctx: SubagentContext): void {
     const runId = event.runId ?? ctx.runId;
-    const sessionId = ctx.requesterSessionKey;
-    if (!runId || !sessionId) {
+    const requesterSessionKey = ctx.requesterSessionKey;
+    if (!runId || !requesterSessionKey) {
       return;
+    }
+
+    // 查找正确的session ID（数据库中的主键）
+    // requesterSessionKey可能是session key（channel_id）或session ID
+    // 先尝试作为session key查找，如果找不到则直接使用（可能是session ID）
+    let sessionId = this.store.getSessionIdByChannelId(requesterSessionKey);
+    if (!sessionId) {
+      // 可能requesterSessionKey已经是session ID
+      sessionId = requesterSessionKey;
     }
 
     const agentId = this.subagentByChildSession.get(event.targetSessionKey);

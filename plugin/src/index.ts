@@ -9,7 +9,7 @@ import qrcode from "qrcode-terminal";
 import type { DashboardPayload, TailscaleStatus } from "./core/types.js";
 import { CopilotRecorder } from "./runtime/recorder.js";
 import { injectDashboardShell, loadDashboardShell, resolveDashboardAssetPath } from "./server/dashboard-assets.js";
-import { DashboardSseHub } from "./server/sse.js";
+import { getOrCreateSseHub } from "./server/sse.js";
 import { CopilotStore } from "./storage/repository.js";
 import { beginTailscaleLogin, disableRemoteAccess, enableTailscaleServe, ensureTailscaleInstalled, resolveGatewayOrigin } from "./tailscale/service.js";
 
@@ -30,7 +30,7 @@ const plugin = {
     const store = createStore(api, pluginConfig);
     store.markStaleRunsAsInterrupted(10 * 60 * 1000);
     const recorder = new CopilotRecorder(store);
-    const sseHub = new DashboardSseHub(store);
+    const sseHub = getOrCreateSseHub(store);
     const publishSoon = createPublishScheduler(() => sseHub.publish());
 
     api.runtime.events.onAgentEvent(() => {
@@ -64,6 +64,15 @@ const plugin = {
 
     api.on("message_received", (event, ctx) => {
       recorder.onMessageReceived(event, ctx);
+      sseHub.publish();
+    });
+
+    api.on("message_sending", () => {
+      sseHub.publish();
+    });
+
+    api.on("message_sent", () => {
+      sseHub.publish();
     });
 
     api.on("llm_input", (event) => {
@@ -115,7 +124,7 @@ const plugin = {
       path: basePath,
       auth: "plugin",
       match: "prefix",
-      handler(req: IncomingMessage, res: ServerResponse) {
+      async handler(req: IncomingMessage, res: ServerResponse) {
         if (!req.url) {
           res.statusCode = 400;
           res.end("Missing URL");
@@ -161,8 +170,32 @@ const plugin = {
           return true;
         }
 
-        if (url.pathname === `${basePath}/api/control/stop` || url.pathname === `${basePath}/api/control/pause` || url.pathname === `${basePath}/api/control/redirect`) {
-          const action = url.pathname.endsWith("stop") ? "stop" : url.pathname.endsWith("pause") ? "pause" : "redirect";
+        if (url.pathname === `${basePath}/api/control/stop`) {
+          const sessionKey = url.searchParams.get("sessionKey") ?? payload.selectedSession?.session.channelId;
+          if (!sessionKey) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: "Missing sessionKey" }));
+            return true;
+          }
+          try {
+            // Send /stop command to the session using subagent.run
+            await api.runtime.subagent.run({
+              sessionKey,
+              message: "/stop",
+              deliver: false,
+            });
+            res.setHeader("content-type", "application/json; charset=utf-8");
+            res.setHeader("cache-control", "no-store, max-age=0");
+            res.end(JSON.stringify({ ok: true }));
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: String(err) }));
+          }
+          return true;
+        }
+
+        if (url.pathname === `${basePath}/api/control/pause` || url.pathname === `${basePath}/api/control/redirect`) {
+          const action = url.pathname.endsWith("pause") ? "pause" : "redirect";
           const sessionId = url.searchParams.get("sessionId") ?? payload.selectedSession?.session.id;
           const runId = url.searchParams.get("runId") ?? payload.selectedSession?.runs.at(-1)?.id;
           const value = url.searchParams.get("value") ?? undefined;

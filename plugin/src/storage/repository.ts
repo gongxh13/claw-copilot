@@ -293,12 +293,16 @@ export class CopilotStore {
       const hiddenToolEventIds = new Set(
         runEvents
           .filter((event) => {
-            if (event.label !== "Tool · sessions_send" && event.label !== "Tool done · sessions_send") {
+            if (event.label !== "Tool · sessions_send" && event.label !== "Tool done · sessions_send" &&
+                event.label !== "Tool · sessions_spawn" && event.label !== "Tool done · sessions_spawn") {
               return false;
             }
             const tool = event.tool_call_id ? runToolCalls.find((call) => call.id === event.tool_call_id) : undefined;
+            // sessions_spawn returns childSessionKey, sessions_send returns sessionKey
             const sessionKey = extractJsonField(event.detail, "sessionKey")
+              ?? extractJsonField(event.detail, "childSessionKey")
               ?? extractJsonField(tool?.resultText, "sessionKey")
+              ?? extractJsonField(tool?.resultText, "childSessionKey")
               ?? extractJsonField(tool?.argsText, "sessionKey");
             return Boolean(sessionKey && subagentKeys.has(sessionKey));
           })
@@ -353,6 +357,16 @@ export class CopilotStore {
   getSession(id: string): SessionRecord | undefined {
     const row = this.db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id) as SqlSession | undefined;
     return row ? this.mapSession(row) : undefined;
+  }
+
+  getSessionIdByChannelId(channelId: string): string | undefined {
+    const row = this.db.prepare(`SELECT id FROM sessions WHERE channel_id = ?`).get(channelId) as { id: string } | undefined;
+    return row?.id;
+  }
+
+  runExists(runId: string, sessionId: string): boolean {
+    const row = this.db.prepare(`SELECT 1 FROM runs WHERE id = ? AND session_id = ?`).get(runId, sessionId) as { 1: number } | undefined;
+    return !!row;
   }
 
   private getRun(id: string): RunRecord | undefined {
