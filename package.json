@@ -1,6 +1,6 @@
 {
   "name": "@gongxh13/claw-copilot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Run-aware observability dashboard plugin for OpenClaw",
   "workspaces": [
     "dashboard"
